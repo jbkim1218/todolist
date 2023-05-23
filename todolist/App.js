@@ -7,9 +7,15 @@ export default function App() {
 
   const addTodoItem = () => {
     if (inputText.trim() !== '') {
-      setTodoList([...todoList, inputText]);
+      setTodoList([...todoList, { text: inputText, completed: false }]);
       setInputText('');
     }
+  };
+
+  const toggleTodoItem = (index) => {
+    const updatedList = [...todoList];
+    updatedList[index].completed = !updatedList[index].completed;
+    setTodoList(updatedList);
   };
 
   const deleteTodoItem = (index) => {
@@ -37,17 +43,20 @@ export default function App() {
         {todoList.map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.todoItem}
-            onPress={() => deleteTodoItem(index)}
+            style={[styles.todoItem, item.completed && styles.completedTodoItem]}
+            onPress={() => toggleTodoItem(index)}
           >
-            <Text style={styles.todoItemText}>{item}</Text>
+            <Text style={styles.todoItemText}>{item.text}</Text>
+            {item.completed && <Text style={styles.completedText}>Completed</Text>}
+            <TouchableOpacity style={styles.deleteButton} onPress={() => deleteTodoItem(index)}>
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
         ))}
       </View>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -89,8 +98,25 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  todoItemText: {
-    fontSize: 16,
+  completedTodoItem: {
+    backgroundColor: '#d9d9d9',
+  },
+  completedText: {
+    color: '#777',
+    textDecorationLine: 'line-through',
+    marginLeft: 10,
+  },
+  deleteButton: {
+    backgroundColor: '#ff5050',
+    padding: 8,
+    borderRadius: 4,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
