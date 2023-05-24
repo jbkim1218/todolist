@@ -1,122 +1,266 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView } from 'react-native';
 
 export default function App() {
-  const [todoList, setTodoList] = useState([]);
-  const [inputText, setInputText] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [task, setTask] = useState('');
+  // 회원 정보 저장을 위한 state
+  const [users, setUsers] = useState([]);
 
-  const addTodoItem = () => {
-    if (inputText.trim() !== '') {
-      setTodoList([...todoList, { text: inputText, completed: false }]);
-      setInputText('');
+  const login = () => {
+    if (username !== '' && password !== '' && users.find((user) => user.username === username && user.password === password)) {
+      setIsLoggedIn(true);
+      setErrorMessage('');
+    } else {
+      setErrorMessage('아이디 또는 비밀번호를 잘못 입력했습니다.');
     }
   };
 
-  const toggleTodoItem = (index) => {
-    const updatedList = [...todoList];
-    updatedList[index].completed = !updatedList[index].completed;
-    setTodoList(updatedList);
+  // 회원가입 로직
+  const register = () => {
+    if (username === '' || password === '') {
+      setErrorMessage('아이디 또는 비밀번호를 설정하지 않았습니다!');
+    } else if (users.find((user) => user.username === username)) {
+      setErrorMessage('Username already exists!');
+    } else {
+      setUsers([...users, { username, password }]);
+      setIsRegistering(false);
+      setErrorMessage('');
+    }
   };
 
-  const deleteTodoItem = (index) => {
-    const updatedList = [...todoList];
-    updatedList.splice(index, 1);
-    setTodoList(updatedList);
+  const logout = () => {
+    setIsLoggedIn(false);
+    setUsername('');
+    setPassword('');
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Todo List</Text>
-      <View style={styles.inputContainer}>
+  const addTask = () => {
+    if (task !== '') {
+      setTasks([...tasks, { id: tasks.length, task }]);
+      setTask('');
+    }
+  };
+
+  const deleteTask = (id) => {
+    setTasks(tasks.filter((task) => task.id !== id));
+  };
+
+  const goToRegister = () => {
+    setIsRegistering(true);
+  };
+
+  const cancelRegister = () => {
+    setIsRegistering(false);
+    setErrorMessage('');
+  };
+
+  if (isLoggedIn) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Tasks</Text>
+        <ScrollView
+          contentContainerStyle={styles.taskList}>
+          {tasks.map((task) => (
+            <View key={task.id} style={styles.taskItem}>
+              <Text style={styles.taskText}>{task.task}</Text>
+              <TouchableOpacity onPress={() => deleteTask(task.id)} style={styles.deleteButton}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+        
         <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={(text) => setInputText(text)}
-          placeholder="Add a task..."
-          placeholderTextColor="#777"
+          style={styles.taskInput}
+          value={task}
+          onChangeText={setTask}
+          placeholder="할일을 추가해 주세요!"
         />
-        <TouchableOpacity style={styles.addButton} onPress={addTodoItem}>
-          <Text style={styles.addButtonLabel}>Add</Text>
+        <TouchableOpacity onPress={addTask} style={styles.addButton}>
+          <Text style={styles.addButtonText}>Add Task</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </View>
-      <View>
-        {todoList.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.todoItem, item.completed && styles.completedTodoItem]}
-            onPress={() => toggleTodoItem(index)}
-          >
-            <Text style={styles.todoItemText}>{item.text}</Text>
-            {item.completed && <Text style={styles.completedText}>Completed</Text>}
-            <TouchableOpacity style={styles.deleteButton} onPress={() => deleteTodoItem(index)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
+    );
+  } else if (isRegistering) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Register</Text>
+        <TextInput
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
+          placeholder="아이디"
+        />
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="비밀번호"
+          secureTextEntry
+        />
+        <TouchableOpacity onPress={register} style={styles.registerButton}>
+          <Text style={styles.registerButtonText}>Register</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={cancelRegister} style={styles.cancelButton}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
       </View>
-    </View>
-  );
+    );
+  } else {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Login</Text>
+        <TextInput
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
+          placeholder="아이디"
+        />
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="비밀번호"
+          secureTextEntry
+        />
+        <TouchableOpacity onPress={login} style={styles.loginButton}>
+          <Text style={styles.loginButtonText}>Login</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={goToRegister} style={styles.registerButton}>
+          <Text style={styles.registerButtonText}>Register</Text>
+        </TouchableOpacity>
+        {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
+      </View>
+    );
+  }
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: 10,
+  taskList: {
+    flexGrow: 1,
   },
-  input: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#777',
-    borderRadius: 4,
-    paddingHorizontal: 10,
-    marginRight: 10,
-  },
-  addButton: {
-    backgroundColor: '#333',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 4,
-    justifyContent: 'center',
-  },
-  addButtonLabel: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  todoItem: {
-    backgroundColor: '#f2f2f2',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 4,
+  taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    width: '80%',
+    borderBottomColor: '#ccc',
+    borderBottomWidth: 1,
+    paddingBottom: 5,
+    paddingTop: 5,
   },
-  completedTodoItem: {
-    backgroundColor: '#d9d9d9',
-  },
-  completedText: {
-    color: '#777',
-    textDecorationLine: 'line-through',
-    marginLeft: 10,
+  taskText: {
+    fontSize: 18,
   },
   deleteButton: {
-    backgroundColor: '#ff5050',
-    padding: 8,
+    backgroundColor: 'red',
+    padding: 5,
+    alignItems: 'center',
     borderRadius: 4,
   },
   deleteButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  taskInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    width: '80%',
+    padding: 10,
+  },
+  addButton: {
+    backgroundColor: 'black',
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 4,
+    marginTop: 10,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  logoutButton: {
+    backgroundColor: 'black',
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 4,
+    marginTop: 10,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    width: '80%',
+    padding: 10,
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  loginButton: {
+    backgroundColor: 'black',
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 4,
+    marginTop: 10,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  registerButton: {
+    backgroundColor: 'black',
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 4,
+    marginTop: 10,
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 4,
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 10,
   },
 });
