@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView } from 'react-native';
-
-
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert } from 'react-native';
+import { Calendar } from 'react-native-calendars';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -9,13 +8,17 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState({});
   const [task, setTask] = useState('');
-  // 회원 정보 저장을 위한 state
   const [users, setUsers] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
 
-  const login = () => {
-    if (username !== '' && password !== '' && users.find((user) => user.username === username && user.password === password)) {
+const onDayPress = (day) => {
+    setSelectedDate(day.dateString);
+  };
+
+const login = () => {
+    if(username !== '' && password !== '' && users.find((user) => user.username === username && user.password === password)) {
       setIsLoggedIn(true);
       setErrorMessage('');
     } else {
@@ -23,12 +26,11 @@ export default function App() {
     }
   };
 
-  // 회원가입 로직
   const register = () => {
-    if (username === '' || password === '') {
+    if(username === '' || password === '') {
       setErrorMessage('아이디 또는 비밀번호를 설정하지 않았습니다!');
-    } else if (users.find((user) => user.username === username)) {
-      setErrorMessage('Username already exists!');
+    } else if(users.find((user) => user.username === username)) {
+      setErrorMessage('Username already exists.');
     } else {
       setUsers([...users, { username, password }]);
       setIsRegistering(false);
@@ -43,32 +45,51 @@ export default function App() {
   };
 
   const addTask = () => {
-    if (task !== '') {
-      setTasks([...tasks, { id: tasks.length, task }]);
+    if (selectedDate && task !== '') {
+      const newTasks = { ...tasks };
+      if (newTasks[selectedDate]) {
+        newTasks[selectedDate] = [...newTasks[selectedDate], { id: newTasks[selectedDate].length, task }];
+      } else {
+        newTasks[selectedDate] = [{ id: 0, task }];
+      }
+      setTasks(newTasks);
       setTask('');
+    } else {
+      Alert.alert('Error', 'Select a date and enter a task');
     }
   };
 
   const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
-  };
-
-  const goToRegister = () => {
-    setIsRegistering(true);
-  };
-
-  const cancelRegister = () => {
-    setIsRegistering(false);
-    setErrorMessage('');
+    if (selectedDate) {
+      const newTasks = { ...tasks };
+      if (newTasks[selectedDate]) {
+        newTasks[selectedDate] = newTasks[selectedDate].filter((task) => task.id !== id);
+        setTasks(newTasks);
+      }
+    }
   };
 
   if (isLoggedIn) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Todo List</Text>
-        <ScrollView
-          contentContainerStyle={styles.taskList}>
-          {tasks.map((task) => (
+        <Calendar onDayPress={onDayPress} />
+        {selectedDate && <Text style={styles.text}>Selected date: {selectedDate}</Text>}
+        
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={task}
+            onChangeText={setTask}
+            placeholder="할일을 추가해 주세요"
+            style={styles.input}
+          />
+          <TouchableOpacity onPress={addTask} style={styles.addButton}>
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.taskList}>
+          {selectedDate && tasks[selectedDate] && tasks[selectedDate].map((task) => (
             <View key={task.id} style={styles.taskItem}>
               <Text style={styles.taskText}>{task.task}</Text>
               <TouchableOpacity onPress={() => deleteTask(task.id)} style={styles.deleteButton}>
@@ -77,16 +98,7 @@ export default function App() {
             </View>
           ))}
         </ScrollView>
-        
-        <TextInput
-          style={styles.taskInput}
-          value={task}
-          onChangeText={setTask}
-          placeholder="할일을 추가해 주세요!"
-        />
-        <TouchableOpacity onPress={addTask} style={styles.addButton}>
-          <Text style={styles.addButtonText}>Add</Text>
-        </TouchableOpacity>
+
         <TouchableOpacity onPress={logout} style={styles.logoutButton}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
@@ -112,16 +124,13 @@ export default function App() {
         <TouchableOpacity onPress={register} style={styles.registerButton}>
           <Text style={styles.registerButtonText}>Sign Up</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={cancelRegister} style={styles.cancelButton}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
         {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
       </View>
     );
   } else {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>로그인</Text>
+        <Text style={styles.title}>Login</Text>
         <TextInput
           style={styles.input}
           value={username}
@@ -138,8 +147,8 @@ export default function App() {
         <TouchableOpacity onPress={login} style={styles.loginButton}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={goToRegister} style={styles.registerButton}>
-          <Text style={styles.registerButtonText}>Sign Up</Text>
+        <TouchableOpacity onPress={() => setIsRegistering(true)} style={styles.registerButton}>
+          <Text style={styles.registerButtonText}>Sign up</Text>
         </TouchableOpacity>
         {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
       </View>
@@ -159,62 +168,52 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  taskList: {
-    flexGrow: 1,
-  },
-  taskItem: {
+  inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    width: '80%',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    paddingBottom: 5,
-    paddingTop: 5,
-  },
-  taskText: {
-    fontSize: 18,
-  },
-  deleteButton: {
-    backgroundColor: 'red',
-    padding: 5,
     alignItems: 'center',
-    borderRadius: 4,
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  taskInput: {
+  input: {
+    flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    width: '80%',
-    padding: 10,
+    borderColor: '#000',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginRight: 10,
   },
   addButton: {
-    backgroundColor: 'black',
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 4,
-    marginTop: 10,
+    backgroundColor: '#000',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   addButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
-  logoutButton: {
-    backgroundColor: 'black',
-    padding: 10,
+  taskList: {
+    paddingHorizontal: 10,
+  },
+  taskItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: 4,
-    marginTop: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 10,
   },
-  logoutButtonText: {
-    color: '#fff',
+  taskText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    paddingVertical: 5,
+  },
+  deleteButton: {
+    backgroundColor: '#f00',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  deleteButtonText: {
+    color: '#fff',
   },
   input: {
     borderWidth: 1,
@@ -249,14 +248,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  cancelButton: {
-    backgroundColor: 'red',
+  logoutButton: {
+    backgroundColor: 'black',
     padding: 10,
     alignItems: 'center',
     borderRadius: 4,
     marginTop: 10,
   },
-  cancelButtonText: {
+  logoutButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
