@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView } from 'react-native';
 
+
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -63,7 +65,7 @@ export default function App() {
   if (isLoggedIn) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Tasks</Text>
+        <Text style={styles.title}>Todo List</Text>
         <ScrollView
           contentContainerStyle={styles.taskList}>
           {tasks.map((task) => (
@@ -83,7 +85,7 @@ export default function App() {
           placeholder="할일을 추가해 주세요!"
         />
         <TouchableOpacity onPress={addTask} style={styles.addButton}>
-          <Text style={styles.addButtonText}>Add Task</Text>
+          <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={logout} style={styles.logoutButton}>
           <Text style={styles.logoutButtonText}>Logout</Text>
@@ -93,7 +95,7 @@ export default function App() {
   } else if (isRegistering) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Register</Text>
+        <Text style={styles.title}>회원가입</Text>
         <TextInput
           style={styles.input}
           value={username}
@@ -108,7 +110,7 @@ export default function App() {
           secureTextEntry
         />
         <TouchableOpacity onPress={register} style={styles.registerButton}>
-          <Text style={styles.registerButtonText}>Register</Text>
+          <Text style={styles.registerButtonText}>Sign Up</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={cancelRegister} style={styles.cancelButton}>
           <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -119,7 +121,7 @@ export default function App() {
   } else {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Login</Text>
+        <Text style={styles.title}>로그인</Text>
         <TextInput
           style={styles.input}
           value={username}
@@ -137,7 +139,7 @@ export default function App() {
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={goToRegister} style={styles.registerButton}>
-          <Text style={styles.registerButtonText}>Register</Text>
+          <Text style={styles.registerButtonText}>Sign Up</Text>
         </TouchableOpacity>
         {errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
       </View>
