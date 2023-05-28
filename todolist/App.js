@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView, Alert } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -12,27 +13,55 @@ export default function App() {
   const [task, setTask] = useState('');
   const [users, setUsers] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
-const onDayPress = (day) => {
+  const onDayPress = (day) => {
     setSelectedDate(day.dateString);
   };
 
-const login = () => {
-    if(username !== '' && password !== '' && users.find((user) => user.username === username && user.password === password)) {
+  const login = () => {
+    if (
+      username !== '' &&
+      password !== '' &&
+      users.find((user) => user.username === username && user.password === password)
+    ) {
+      const loggedInUser = users.find(
+        (user) => user.username === username && user.password === password
+      );
+      setCurrentUser(loggedInUser);
       setIsLoggedIn(true);
       setErrorMessage('');
     } else {
       setErrorMessage('아이디 또는 비밀번호를 잘못 입력했습니다.');
     }
   };
+  const App = () => {
+  const handleOpenVideo = async () => {
+    return (<View> <iframe width="560" height="315" src="https://www.youtube.com/embed/tHf7tE4XaLc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>  </View>)
+
+    await WebBrowser.openBrowserAsync(url);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Button title="영상 재생" onPress={handleOpenVideo} />
+     
+    </View>
+  );
+};
 
   const register = () => {
-    if(username === '' || password === '') {
+    if (username === '' || password === '') {
       setErrorMessage('아이디 또는 비밀번호를 설정하지 않았습니다!');
-    } else if(users.find((user) => user.username === username)) {
+    } else if (users.find((user) => user.username === username)) {
       setErrorMessage('Username already exists.');
     } else {
-      setUsers([...users, { username, password }]);
+      const newUser = {
+        id: users.length + 1,
+        username,
+        password,
+      };
+      setUsers([...users, newUser]);
       setIsRegistering(false);
       setErrorMessage('');
     }
@@ -42,15 +71,23 @@ const login = () => {
     setIsLoggedIn(false);
     setUsername('');
     setPassword('');
+    setCurrentUser(null);
   };
 
   const addTask = () => {
     if (selectedDate && task !== '') {
       const newTasks = { ...tasks };
       if (newTasks[selectedDate]) {
-        newTasks[selectedDate] = [...newTasks[selectedDate], { id: newTasks[selectedDate].length, task }];
+        if (newTasks[selectedDate][currentUser.id]) {
+          newTasks[selectedDate][currentUser.id] = [
+            ...newTasks[selectedDate][currentUser.id],
+            { id: newTasks[selectedDate][currentUser.id].length, task },
+          ];
+        } else {
+          newTasks[selectedDate][currentUser.id] = [{ id: 0, task }];
+        }
       } else {
-        newTasks[selectedDate] = [{ id: 0, task }];
+        newTasks[selectedDate] = { [currentUser.id]: [{ id: 0, task }] };
       }
       setTasks(newTasks);
       setTask('');
@@ -62,8 +99,16 @@ const login = () => {
   const deleteTask = (id) => {
     if (selectedDate) {
       const newTasks = { ...tasks };
-      if (newTasks[selectedDate]) {
-        newTasks[selectedDate] = newTasks[selectedDate].filter((task) => task.id !== id);
+      if (newTasks[selectedDate] && newTasks[selectedDate][currentUser.id]) {
+        newTasks[selectedDate][currentUser.id] = newTasks[selectedDate][currentUser.id].filter(
+          (task) => task.id !== id
+        );
+        if (newTasks[selectedDate][currentUser.id].length === 0) {
+          delete newTasks[selectedDate][currentUser.id];
+          if (Object.keys(newTasks[selectedDate]).length === 0) {
+            delete newTasks[selectedDate];
+          }
+        }
         setTasks(newTasks);
       }
     }
@@ -72,7 +117,7 @@ const login = () => {
   if (isLoggedIn) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Todo List</Text>
+              <Text style={styles.title}>Todo List</Text>
         <Calendar onDayPress={onDayPress} />
         {selectedDate && <Text style={styles.text}>Selected date: {selectedDate}</Text>}
         
@@ -86,17 +131,26 @@ const login = () => {
           <TouchableOpacity onPress={addTask} style={styles.addButton}>
             <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
+
+    
         </View>
+           <View style={styles.container}>
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/tHf7tE4XaLc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <Text style={styles.explainText}> 공부할 때 듣기 좋은 노래입니다 </Text>
+      </View>
 
         <ScrollView contentContainerStyle={styles.taskList}>
-          {selectedDate && tasks[selectedDate] && tasks[selectedDate].map((task) => (
-            <View key={task.id} style={styles.taskItem}>
-              <Text style={styles.taskText}>{task.task}</Text>
-              <TouchableOpacity onPress={() => deleteTask(task.id)} style={styles.deleteButton}>
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+          {selectedDate &&
+            tasks[selectedDate] &&
+            tasks[selectedDate][currentUser.id] &&
+            tasks[selectedDate][currentUser.id].map((task) => (
+              <View key={task.id} style={styles.taskItem}>
+                <Text style={styles.taskText}>{task.task}</Text>
+                <TouchableOpacity onPress={() => deleteTask(task.id)} style={styles.deleteButton}>
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
         </ScrollView>
 
         <TouchableOpacity onPress={logout} style={styles.logoutButton}>
@@ -144,6 +198,8 @@ const login = () => {
           placeholder="비밀번호"
           secureTextEntry
         />
+
+
         <TouchableOpacity onPress={login} style={styles.loginButton}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
@@ -155,7 +211,6 @@ const login = () => {
     );
   }
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -175,13 +230,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginBottom: 10,
   },
-  input: {
-    flex: 1,
+   input: {
     borderWidth: 1,
-    borderColor: '#000',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 10,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    width: '80%',
+    padding: 10,
+    marginTop: 5,
+    marginBottom: 5,
   },
   addButton: {
     backgroundColor: '#000',
@@ -214,15 +270,6 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#fff',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    width: '80%',
-    padding: 10,
-    marginTop: 5,
-    marginBottom: 5,
   },
   loginButton: {
     backgroundColor: 'black',
@@ -263,5 +310,10 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     marginTop: 10,
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
